@@ -2,8 +2,6 @@ import os
 from flask import Flask, request
 from telegram import Update, Bot
 import logging
-import threading
-import asyncio
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,35 +18,32 @@ bot = Bot(token=BOT_TOKEN)
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    data = request.get_json()
-    update = Update.de_json(data, bot)
-
-    async def handle():
+    try:
+        data = request.get_json()
+        logger.info(f"Received webhook: {data}")
+        
+        update = Update.de_json(data, bot)
+        
         if update.message and update.message.text:
+            logger.info(f"Message text: {update.message.text}")
+            
             if "/contacts" in update.message.text:
                 lines = ["📋 *Sales Contacts*\n"]
                 for rep in SALES_REPS:
                     lines.append(f"🏷 *{rep['name']}* — {rep['role']}")
                     lines.append(f"📞 `{rep['phone']}`\n")
-                await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
+                
+                update.message.reply_text("\n".join(lines), parse_mode="Markdown")
                 logger.info(f"Sent contacts to {update.message.chat.id}")
-
-    asyncio.run(handle())
+    except Exception as e:
+        logger.error(f"Error: {e}", exc_info=True)
+    
     return "ok", 200
 
 @app.route("/health", methods=["GET"])
 def health():
     return "ok", 200
 
-async def set_webhook():
-    webhook_url = "https://pepcheckbot-production.up.railway.app/webhook"
-    await bot.set_webhook(url=webhook_url)
-    logger.info(f"Webhook set to {webhook_url}")
-
-def run_webhook_setup():
-    asyncio.run(set_webhook())
-
 if __name__ == "__main__":
-    thread = threading.Thread(target=run_webhook_setup, daemon=True)
-    thread.start()
-    app.run(host="0.0.0.0", port=8000)
+    logger.info("Starting Flask app on 0.0.0.0:8000")
+    app.run(host="0.0.0.0", port=8000, debug=False)
