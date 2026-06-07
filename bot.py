@@ -8,7 +8,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8668093662:AAHgPo5Uw0siICWEV8FygwTg_EpnCLzos6I")
-RAILWAY_DOMAIN = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "localhost:8000")
 
 SALES_REPS = [
     {"name": "Barn", "role": "Seller", "phone": "+1 914 426 6031"},
@@ -41,7 +40,7 @@ def health():
 if __name__ == "__main__":
     # Set webhook asynchronously
     async def set_webhook():
-        webhook_url = f"https://{RAILWAY_DOMAIN}/webhook"
+        webhook_url = "https://pepcheckbot-production.up.railway.app/webhook"
         await bot.set_webhook(url=webhook_url)
         logger.info(f"Webhook set to {webhook_url}")
     
