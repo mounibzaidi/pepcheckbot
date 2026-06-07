@@ -3,6 +3,7 @@ from flask import Flask, request
 from telegram import Bot, BotCommand, InlineQueryResultArticle, InputTextMessageContent
 import logging
 import json
+import asyncio
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -18,13 +19,10 @@ SALES_REPS = [
 app = Flask(__name__)
 bot = Bot(token=BOT_TOKEN)
 
-# Register bot commands on startup
 def register_commands():
     try:
-        commands = [
-            BotCommand("contacts", "Get sales contact information"),
-        ]
-        bot.set_my_commands(commands)
+        commands = [BotCommand("contacts", "Get sales contact information")]
+        asyncio.run(bot.set_my_commands(commands))
         logger.info("Commands registered")
     except Exception as e:
         logger.error(f"Failed to register commands: {e}")
@@ -34,15 +32,11 @@ def webhook():
     try:
         data = request.get_json()
         logger.info(f"Webhook: {json.dumps(data)}")
-        
-        # Handle inline queries (autocomplete as user types)
+
         if "inline_query" in data:
             query = data["inline_query"]["query"].lower()
             inline_query_id = data["inline_query"]["id"]
-            
             results = []
-            
-            # Filter sellers by query
             for rep in SALES_REPS:
                 if query == "" or query in rep["name"].lower():
                     result = InlineQueryResultArticle(
@@ -55,33 +49,31 @@ def webhook():
                         )
                     )
                     results.append(result)
-            
             try:
-                bot.answer_inline_query(inline_query_id, results, cache_time=0)
+                asyncio.run(bot.answer_inline_query(inline_query_id, results, cache_time=0))
                 logger.info(f"Answered inline query: {query}")
             except Exception as e:
                 logger.error(f"Failed to answer inline query: {e}")
-        
-        # Handle regular messages
+
         if "message" in data and "text" in data["message"]:
             text = data["message"]["text"]
             chat_id = data["message"]["chat"]["id"]
-            
+
             if text.startswith("/contacts"):
                 lines = ["📋 *Sales Contacts*\n"]
                 for rep in SALES_REPS:
                     lines.append(f"🏷 *{rep['name']}* — {rep['role']}")
                     lines.append(f"📞 `{rep['phone']}`\n")
-                
                 message_text = "\n".join(lines)
                 try:
-                    bot.send_message(chat_id=chat_id, text=message_text, parse_mode="Markdown")
+                    asyncio.run(bot.send_message(chat_id=chat_id, text=message_text, parse_mode="Markdown"))
                     logger.info(f"Sent contacts to {chat_id}")
                 except Exception as send_error:
                     logger.error(f"Failed to send message: {send_error}")
+
     except Exception as e:
         logger.error(f"Error: {e}", exc_info=True)
-    
+
     return "ok", 200
 
 @app.route("/health", methods=["GET"])
