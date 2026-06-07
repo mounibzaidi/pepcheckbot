@@ -2,11 +2,13 @@ import os
 from flask import Flask, request
 from telegram import Update, Bot
 import logging
+import asyncio
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8668093662:AAHgPo5Uw0siICWEV8FygwTg_EpnCLzos6I")
+RAILWAY_DOMAIN = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "localhost:8000")
 
 SALES_REPS = [
     {"name": "Barn", "role": "Seller", "phone": "+1 914 426 6031"},
@@ -35,4 +37,10 @@ def health():
     return "ok", 200
 
 if __name__ == "__main__":
+    # Set webhook asynchronously
+    async def set_webhook():
+        await bot.set_webhook(url=f"https://{RAILWAY_DOMAIN}/webhook")
+        logger.info(f"Webhook set to https://{RAILWAY_DOMAIN}/webhook")
+    
+    asyncio.run(set_webhook())
     app.run(host="0.0.0.0", port=8000)
