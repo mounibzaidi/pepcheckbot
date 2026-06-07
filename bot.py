@@ -23,12 +23,14 @@ def webhook():
     data = request.get_json()
     update = Update.de_json(data, bot)
     
-    if update.message and update.message.text == "/contacts":
-        lines = ["📋 *Sales Contacts*\n"]
-        for rep in SALES_REPS:
-            lines.append(f"🏷 *{rep['name']}* — {rep['role']}")
-            lines.append(f"📞 `{rep['phone']}`\n")
-        update.message.reply_text("\n".join(lines), parse_mode="Markdown")
+    if update.message and update.message.text:
+        if "/contacts" in update.message.text:
+            lines = ["📋 *Sales Contacts*\n"]
+            for rep in SALES_REPS:
+                lines.append(f"🏷 *{rep['name']}* — {rep['role']}")
+                lines.append(f"📞 `{rep['phone']}`\n")
+            update.message.reply_text("\n".join(lines), parse_mode="Markdown")
+            logger.info(f"Sent contacts to {update.message.chat.id}")
     
     return "ok", 200
 
@@ -39,8 +41,9 @@ def health():
 if __name__ == "__main__":
     # Set webhook asynchronously
     async def set_webhook():
-        await bot.set_webhook(url=f"https://{RAILWAY_DOMAIN}/webhook")
-        logger.info(f"Webhook set to https://{RAILWAY_DOMAIN}/webhook")
+        webhook_url = f"https://{RAILWAY_DOMAIN}/webhook"
+        await bot.set_webhook(url=webhook_url)
+        logger.info(f"Webhook set to {webhook_url}")
     
     asyncio.run(set_webhook())
     app.run(host="0.0.0.0", port=8000)
