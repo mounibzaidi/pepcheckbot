@@ -17,7 +17,6 @@ SALES_REPS = [
 ]
 
 app = Flask(__name__)
-bot = Bot(token=BOT_TOKEN)
 
 def run_async(coro):
     loop = asyncio.new_event_loop()
@@ -29,6 +28,7 @@ def run_async(coro):
 
 def register_commands():
     try:
+        bot = Bot(token=BOT_TOKEN)
         commands = [BotCommand("contacts", "Get sales contact - use /contacts or /contacts barn")]
         run_async(bot.set_my_commands(commands))
         logger.info("Commands registered")
@@ -38,6 +38,7 @@ def register_commands():
 @app.route("/webhook", methods=["POST"])
 def webhook():
     try:
+        bot = Bot(token=BOT_TOKEN)
         data = request.get_json()
         logger.info(f"Webhook: {json.dumps(data)}")
 
