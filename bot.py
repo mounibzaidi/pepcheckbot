@@ -21,7 +21,7 @@ bot = Bot(token=BOT_TOKEN)
 
 def register_commands():
     try:
-        commands = [BotCommand("contacts", "Get sales contact information")]
+        commands = [BotCommand("contacts", "Get sales contact - use /contacts or /contacts barn")]
         asyncio.run(bot.set_my_commands(commands))
         logger.info("Commands registered")
     except Exception as e:
@@ -51,7 +51,6 @@ def webhook():
                     results.append(result)
             try:
                 asyncio.run(bot.answer_inline_query(inline_query_id, results, cache_time=0))
-                logger.info(f"Answered inline query: {query}")
             except Exception as e:
                 logger.error(f"Failed to answer inline query: {e}")
 
@@ -60,11 +59,22 @@ def webhook():
             chat_id = data["message"]["chat"]["id"]
 
             if text.startswith("/contacts"):
-                lines = ["📋 *Sales Contacts*\n"]
-                for rep in SALES_REPS:
-                    lines.append(f"🏷 *{rep['name']}* — {rep['role']}")
-                    lines.append(f"📞 `{rep['phone']}`\n")
-                message_text = "\n".join(lines)
+                # Get search term after /contacts
+                parts = text.split(maxsplit=1)
+                search = parts[1].lower() if len(parts) > 1 else ""
+
+                # Filter reps
+                matches = [r for r in SALES_REPS if search in r["name"].lower()] if search else SALES_REPS
+
+                if matches:
+                    lines = ["📋 *Sales Contacts*\n"]
+                    for rep in matches:
+                        lines.append(f"🏷 *{rep['name']}* — {rep['role']}")
+                        lines.append(f"📞 `{rep['phone']}`\n")
+                    message_text = "\n".join(lines)
+                else:
+                    message_text = f"❌ No contact found for *{search}*"
+
                 try:
                     asyncio.run(bot.send_message(chat_id=chat_id, text=message_text, parse_mode="Markdown"))
                     logger.info(f"Sent contacts to {chat_id}")
