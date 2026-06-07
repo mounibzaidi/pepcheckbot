@@ -3,11 +3,13 @@ from flask import Flask, request
 from telegram import Bot
 import logging
 import json
+import asyncio
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
+PORT = int(os.environ.get("PORT", 8080))
 
 SALES_REPS = [
     {"name": "Barn", "role": "Seller", "phone": "+1 914 426 6031"},
@@ -39,7 +41,8 @@ def webhook():
                     lines.append(f"🏷 *{rep['name']}* — {rep['role']}")
                     lines.append(f"📞 `{rep['phone']}`\n")
                 
-                get_bot().send_message(chat_id=chat_id, text="\n".join(lines), parse_mode="Markdown")
+                message_text = "\n".join(lines)
+                asyncio.run(get_bot().send_message(chat_id=chat_id, text=message_text, parse_mode="Markdown"))
                 logger.info(f"Sent contacts to {chat_id}")
     except Exception as e:
         logger.error(f"Error: {e}", exc_info=True)
@@ -51,4 +54,4 @@ def health():
     return "ok", 200
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=False)
+    app.run(host="0.0.0.0", port=PORT, debug=False)
