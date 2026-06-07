@@ -1,25 +1,49 @@
 import os
+from flask import Flask, request
+from telegram import Bot
 import logging
-from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+import json
+import asyncio
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
+bot = Bot(token=BOT_TOKEN)
 
 SALES_REPS = [
     {"name": "Barn", "role": "Seller", "phone": "+1 914 426 6031"},
     {"name": "Genxell Bio", "role": "Seller", "phone": "+1 312 217 7158"},
 ]
 
-async def contacts(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    lines = ["📋 *Sales Contacts*\n"]
-    for rep in SALES_REPS:
-        lines.append(f"🏷 *{rep['name']}* — {rep['role']}")
-        lines.append(f"📞 `{rep['phone']}`\n")
-    await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
+app = Flask(__name__)
+
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    try:
+        data = request.get_json()
+        logger.info(f"Received: {json.dumps(data)}")
+
+        if "message" in data and "text" in data["message"]:
+            text = data["message"]["text"]
+            chat_id = data["message"]["chat"]["id"]
+
+            if "/contacts" in text:
+                lines = ["📋 *Sales Contacts*\n"]
+                for rep in SALES_REPS:
+                    lines.append(f"🏷 *{rep['name']}* — {rep['role']}")
+                    lines.append(f"📞 `{rep['phone']}`\n")
+
+                asyncio.run(bot.send_message(chat_id=chat_id, text="\n".join(lines), parse_mode="Markdown"))
+                logger.info(f"Sent contacts to {chat_id}")
+    except Exception as e:
+        logger.error(f"Error: {e}", exc_info=True)
+
+    return "ok", 200
+
+@app.route("/health", methods=["GET"])
+def health():
+    return "ok", 200
 
 if __name__ == "__main__":
-    app = Application.builder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("contacts", contacts))
-    app.run_polling()
+    app.run(host="0.0.0.0", port=8000, debug=False)
