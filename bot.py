@@ -31,6 +31,7 @@ def webhook():
         data = request.get_json()
         logger.info(f"Webhook: {json.dumps(data)}")
         
+        # Handle regular messages
         if "message" in data and "text" in data["message"]:
             text = data["message"]["text"]
             chat_id = data["message"]["chat"]["id"]
@@ -42,8 +43,11 @@ def webhook():
                     lines.append(f"📞 `{rep['phone']}`\n")
                 
                 message_text = "\n".join(lines)
-                asyncio.run(get_bot().send_message(chat_id=chat_id, text=message_text, parse_mode="Markdown"))
-                logger.info(f"Sent contacts to {chat_id}")
+                try:
+                    asyncio.run(get_bot().send_message(chat_id=chat_id, text=message_text, parse_mode="Markdown"))
+                    logger.info(f"Sent contacts to {chat_id}")
+                except Exception as send_error:
+                    logger.error(f"Failed to send message: {send_error}")
     except Exception as e:
         logger.error(f"Error: {e}", exc_info=True)
     
