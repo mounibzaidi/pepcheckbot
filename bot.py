@@ -1,42 +1,25 @@
 import os
-from flask import Flask, request
-from telegram import Update, Bot
 import logging
+from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "8668093662:AAHgPo5Uw0siICWEV8FygwTg_EpnCLzos6I")
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
 SALES_REPS = [
     {"name": "Barn", "role": "Seller", "phone": "+1 914 426 6031"},
     {"name": "Genxell Bio", "role": "Seller", "phone": "+1 312 217 7158"},
 ]
 
-app = Flask(__name__)
-bot = Bot(token=BOT_TOKEN)
-
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    try:
-        data = request.get_json()
-        update = Update.de_json(data, bot)
-        
-        if update.message and update.message.text and "/contacts" in update.message.text:
-            lines = ["📋 *Sales Contacts*\n"]
-            for rep in SALES_REPS:
-                lines.append(f"🏷 *{rep['name']}* — {rep['role']}")
-                lines.append(f"📞 `{rep['phone']}`\n")
-            
-            update.message.reply_text("\n".join(lines), parse_mode="Markdown")
-    except Exception as e:
-        logger.error(f"Error: {e}", exc_info=True)
-    
-    return "ok", 200
-
-@app.route("/health", methods=["GET"])
-def health():
-    return "ok", 200
+async def contacts(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    lines = ["📋 *Sales Contacts*\n"]
+    for rep in SALES_REPS:
+        lines.append(f"🏷 *{rep['name']}* — {rep['role']}")
+        lines.append(f"📞 `{rep['phone']}`\n")
+    await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=False)
+    app = Application.builder().token(BOT_TOKEN).build()
+    app.add_handler(CommandHandler("contacts", contacts))
+    app.run_polling()
