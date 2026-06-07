@@ -7,8 +7,7 @@ import json
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-BOT_TOKEN = os.environ.get("8668093662:AAHgPo5Uw0siICWEV8FygwTg_EpnCLzos6I")
-bot = Bot(token=BOT_TOKEN)
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
 SALES_REPS = [
     {"name": "Barn", "role": "Seller", "phone": "+1 914 426 6031"},
@@ -16,6 +15,13 @@ SALES_REPS = [
 ]
 
 app = Flask(__name__)
+bot = None
+
+def get_bot():
+    global bot
+    if bot is None:
+        bot = Bot(token=BOT_TOKEN)
+    return bot
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -33,7 +39,7 @@ def webhook():
                     lines.append(f"🏷 *{rep['name']}* — {rep['role']}")
                     lines.append(f"📞 `{rep['phone']}`\n")
                 
-                bot.send_message(chat_id=chat_id, text="\n".join(lines), parse_mode="Markdown")
+                get_bot().send_message(chat_id=chat_id, text="\n".join(lines), parse_mode="Markdown")
                 logger.info(f"Sent contacts to {chat_id}")
     except Exception as e:
         logger.error(f"Error: {e}", exc_info=True)
