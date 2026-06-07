@@ -17,13 +17,7 @@ SALES_REPS = [
 ]
 
 app = Flask(__name__)
-bot = None
-
-def get_bot():
-    global bot
-    if bot is None:
-        bot = Bot(token=BOT_TOKEN)
-    return bot
+bot = Bot(token=BOT_TOKEN)
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -44,7 +38,8 @@ def webhook():
                 
                 message_text = "\n".join(lines)
                 try:
-                    asyncio.run(get_bot().send_message(chat_id=chat_id, text=message_text, parse_mode="Markdown"))
+                    # Don't use asyncio.run() — just return and let Flask handle it
+                    bot.send_message(chat_id=chat_id, text=message_text, parse_mode="Markdown")
                     logger.info(f"Sent contacts to {chat_id}")
                 except Exception as send_error:
                     logger.error(f"Failed to send message: {send_error}")
